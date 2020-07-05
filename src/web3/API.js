@@ -89,7 +89,6 @@ export const getAllQuestion = async () => {
                 id
             })
         }))
-        console.log(questions)
         return questions
     } catch (e) {
         throw e
@@ -115,7 +114,7 @@ export const sendRewardEvent = async (callback) => {
         if (error) {
             throw error
         } else {
-            callback()
+            callback(data.eventData.questionId)
             return data
         }
     })

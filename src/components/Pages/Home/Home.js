@@ -15,11 +15,10 @@ class Home extends React.Component {
     this.state = {
       openThread: false,
       rewardFeed: true,
-      clickedQuestion: {},
+      clickedQuestion: null,
       questions: [],
       answers: []
     }
-
   }
   fetchAnswers(questionId) {
     getAnswers(questionId).then((answers) => {
@@ -36,7 +35,8 @@ class Home extends React.Component {
         value: '',
         timestamp: '',
         deadline2Modify: ''
-      }
+      },
+      clickedQuestion: null
     })
   }
   renderThread() {
@@ -69,26 +69,22 @@ class Home extends React.Component {
       this.fetchQuestions()
     })
     addAnswerEvent(() => {
-      if(_.isEmpty(this.state.clickedQuestion)) {
-        return
-      } else {
+/**
+ * 'TODO' move this part to thread component
+ */
+      if(!_.isEmpty(this.state.clickedQuestion)) {
         this.fetchAnswers(this.state.clickedQuestion.id.toString()) 
-        this.fetchQuestions()
-
       }
+      this.fetchQuestions()
     }
     )
-    sendRewardEvent(() => {
+    sendRewardEvent((questionId) => {
       this.fetchQuestions()
-      this.fetchAnswers(this.state.clickedQuestion.id.toString())
+      // Events can come from another user, hence there may not be a clickedQuestion
+      if(!_.isEmpty(this.state.clickedQuestion) && this.state.clickedQuestion.id === questionId){
+        this.fetchAnswers(questionId.toString())
+      }
     })
-  }
-  /**
-   * purpose: call the nested functions in <Header/>
-   */
-  sendRewardEventHandler() {
-    this.fetchQuestions()
-    this.fetchAnswers(this.state.clickedQuestion.id.toString())
   }
   async onQuestionClick(question) {
     this.setState({
@@ -102,7 +98,7 @@ class Home extends React.Component {
     const isRegistered = !!this.props.address
     return isRegistered ? (
       <div style={container}>
-        <Header sendRewardEventHandler={() => this.sendRewardEventHandler()}/>
+        <Header/>
         <AskQuestion/>
         <div style={{ alignSelf: 'center' }}>
           <MyButton style={{ ...button, marginRight: '10px' }} onClick={() => this.setState({ rewardFeed: true })}>Reward</MyButton>

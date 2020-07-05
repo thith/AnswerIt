@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { color } from '../../styles/index'
 import { List, Dialog, DialogContent } from '@material-ui/core';
-import {MyButton} from './Button'
+import { MyButton } from './Button'
 import { connect } from 'react-redux';
 import * as actions from '../../redux/actions'
-import { AnswerForm, Answer, Question, InformDialog} from './'
+import { AnswerForm, Answer, Question, InformDialog } from './'
 import { toUNIXTimestamp, MODIFY_TIME } from '../../helper/common'
 import { addAnswer, sendReward } from '../../web3/API'
+import {compareTimestamp} from '../../helper/common'
 
 function Thread(props) {
     const { open, handleClose, rewardFeed, question, answers } = props
@@ -19,6 +20,8 @@ function Thread(props) {
         timestamp: '',
         deadline2Modify: ''
     })
+    const isOwner = address === question.owner
+    const showAcceptButton = !question.resolved && isOwner && question.reward
     function handleAnswerContentChange(content) {
         setAnswer({
             ...answer,
@@ -34,7 +37,7 @@ function Thread(props) {
             timestamp: toUNIXTimestamp(new Date()),
         }
         try {
-            if(!tokenAddress && !tokenKey) {
+            if (!tokenAddress && !tokenKey) {
                 // it would be best to direct to the login page
                 console.log('token expired!')
                 setNeedAuth(true)
@@ -63,7 +66,7 @@ function Thread(props) {
         if (!rewardFeed)
             return
         try {
-            if(!tokenAddress && !tokenKey) {
+            if (!tokenAddress && !tokenKey) {
                 // it would be best to direct to the login page
                 console.log('token expired!')
                 setNeedAuth(true)
@@ -76,13 +79,29 @@ function Thread(props) {
         }
         setOpenDialog(true)
     }
+    function sortAnswers(answers) {
+        function compareAnswers(a1, a2) {
+            if (a1.isBestAnswer)
+                return -1
+            else if (a2.isBestAnswer)
+                return 1
+            else {
+                return compareTimestamp(a1.timestamp, a2.timestamp)
+            }
+        }
+        return answers.sort((a, b) => compareAnswers(a, b))
+    }
     function renderAnswers() {
-        return answers.map((answer, i) => {
+        if (answers.length === 0)
+            return <div />
+        const sortedAnswers = sortAnswers(answers)
+        return sortedAnswers.map((answer, i) => {
             return (
                 <div key={i}>
                     <Answer
                         answer={answer} i={i}
-                        onClick={() => giveReward(answer.questionId.toString(), answer.id.toString())}
+                        giveReward={() => giveReward(answer.questionId.toString(), answer.id.toString())}
+                        showAcceptButton={showAcceptButton}
                     />
                 </div>
             )
